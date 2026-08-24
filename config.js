@@ -10,8 +10,10 @@ const CONFIG = {
   repo: "fredrik60",
   branch: "main",
   uploadsFolder: "uploads",
-  // ⚠️ PASTE YOUR TOKEN HERE (starts with github_pat_...)
-  token: "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",
+  // ⚠️ Do NOT put your real token here — GitHub will auto-revoke it!
+  // Create config.local.js (gitignored) with your token instead:
+  //   const CONFIG_OVERRIDE = { token: "github_pat_..." };
+  token: "",
   // Categories for the challenge. Edit to match your event.
   categories: [
     "Best sunset",

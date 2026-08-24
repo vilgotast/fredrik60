@@ -17,8 +17,11 @@ uploads stored directly in the repo via the GitHub Contents API.
    - Repository permissions: **Contents** = Read and write
    - Expiration: 7 days (or however long the event lasts)
 
-3. **Paste the token** into `config.js` (replace `YOUR_TOKEN_HERE`).
-   Also edit the `categories` array to match your event's challenges.
+3. **Paste the token into `config.local.js`** (NOT `config.js`!).
+   `config.local.js` is gitignored so it never gets pushed to the repo.
+   GitHub's secret scanner will **auto-revoke** any token committed to a
+   public repo — that's why the token must live only in this local file.
+   Also edit the `categories` array in `config.js` to match your event.
 
 4. **Enable GitHub Pages**: in the repo → Settings → Pages → Source →
    Deploy from branch → `main` / root. Wait ~1 min for the site to build.
@@ -43,6 +46,9 @@ uploads stored directly in the repo via the GitHub Contents API.
   event can read it. That's why it's scoped to **only** this throwaway repo
   with **only** Contents read/write, and revoked right after. Do not reuse
   this token for anything else.
+- **Never commit the real token to the repo.** GitHub's secret scanner
+  automatically detects and revokes any PAT found in a public repo. The
+  token lives only in `config.local.js`, which is gitignored.
 - GitHub rate-limits unauthenticated API reads to 60/hour per IP. For a
   small event this is fine; if many guests hit the gallery at once, some
   may see "Failed to load" — just refresh.

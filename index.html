@@ -53,6 +53,8 @@
   </p>
 
   <script src="config.js"></script>
+  <script src="config.local.js"></script>
+  <script>if (typeof CONFIG_OVERRIDE === "object") Object.assign(CONFIG, CONFIG_OVERRIDE);</script>
   <script>
     const sel = document.getElementById("category");
     CONFIG.categories.forEach(c => {

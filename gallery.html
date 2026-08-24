@@ -32,6 +32,8 @@
   <p style="margin-top:24px;"><a href="index.html">&larr; Back to upload</a></p>
 
   <script src="config.js"></script>
+  <script src="config.local.js"></script>
+  <script>if (typeof CONFIG_OVERRIDE === "object") Object.assign(CONFIG, CONFIG_OVERRIDE);</script>
   <script>
     (async () => {
       const loading = document.getElementById("loading");
