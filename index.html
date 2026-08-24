@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload - Fredrik60 Challenge</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 480px; margin: 40px auto; padding: 0 16px;
+      background: #fafafa; color: #222;
+    }
+    h1 { font-size: 1.4rem; margin-bottom: 8px; }
+    p.sub { color: #666; margin-top: 0; font-size: 0.9rem; }
+    label { display: block; font-weight: 600; margin: 16px 0 6px; font-size: 0.9rem; }
+    select, input[type="text"], input[type="file"] {
+      width: 100%; padding: 10px; font-size: 1rem;
+      border: 1px solid #ccc; border-radius: 6px; background: #fff;
+    }
+    button {
+      width: 100%; margin-top: 20px; padding: 12px; font-size: 1rem;
+      background: #2563eb; color: #fff; border: none; border-radius: 6px;
+      cursor: pointer; font-weight: 600;
+    }
+    button:disabled { background: #999; cursor: not-allowed; }
+    #status { margin-top: 16px; font-size: 0.9rem; min-height: 1.2em; }
+    #status.ok { color: #16a34a; }
+    #status.err { color: #dc2626; }
+    #preview { max-width: 100%; max-height: 240px; margin-top: 12px; border-radius: 6px; display: none; }
+    a { color: #2563eb; }
+  </style>
+</head>
+<body>
+  <h1>Fredrik60 Photo Challenge</h1>
+  <p class="sub">Upload a picture for each category. At the end we'll review them all together.</p>
+
+  <label for="category">Category</label>
+  <select id="category"></select>
+
+  <label for="name">Your name (optional)</label>
+  <input type="text" id="name" placeholder="e.g. Anna">
+
+  <label for="file">Choose a picture</label>
+  <input type="file" id="file" accept="image/*">
+  <img id="preview" alt="preview">
+
+  <button id="uploadBtn">Upload</button>
+  <div id="status"></div>
+
+  <p style="margin-top:32px;font-size:0.85rem;color:#888;">
+    <a href="gallery.html">View the gallery &rarr;</a>
+  </p>
+
+  <script src="config.js"></script>
+  <script>
+    const sel = document.getElementById("category");
+    CONFIG.categories.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c; opt.textContent = c;
+      sel.appendChild(opt);
+    });
+
+    const fileInput = document.getElementById("file");
+    const preview = document.getElementById("preview");
+    fileInput.addEventListener("change", () => {
+      const f = fileInput.files[0];
+      if (f) {
+        preview.src = URL.createObjectURL(f);
+        preview.style.display = "block";
+      } else {
+        preview.style.display = "none";
+      }
+    });
+
+    function setStatus(msg, kind) {
+      const s = document.getElementById("status");
+      s.textContent = msg;
+      s.className = kind || "";
+    }
+
+    document.getElementById("uploadBtn").addEventListener("click", async () => {
+      if (CONFIG.token === "YOUR_TOKEN_HERE") {
+        setStatus("ERROR: Set your token in config.js first.", "err");
+        return;
+      }
+      const file = fileInput.files[0];
+      if (!file) { setStatus("Please choose a picture.", "err"); return; }
+      if (file.size > CONFIG.maxFileSizeMB * 1024 * 1024) {
+        setStatus(`Picture is too large (max ${CONFIG.maxFileSizeMB} MB).`, "err");
+        return;
+      }
+
+      const btn = document.getElementById("uploadBtn");
+      btn.disabled = true;
+      setStatus("Uploading...");
+
+      const category = sel.value;
+      const name = (document.getElementById("name").value || "anon")
+        .replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 20);
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const ts = new Date().toISOString().replace(/[:.]/g, "-");
+      const path = `${CONFIG.uploadsFolder}/${category.replace(/[^a-zA-Z0-9_-]/g,"_")}-${name}-${ts}.${ext}`;
+
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = reader.result.split(",")[1];
+        const url = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${encodeURIComponent(path)}?ref=${CONFIG.branch}`;
+        try {
+          const res = await fetch(url, {
+            method: "PUT",
+            headers: {
+              "Authorization": `Bearer ${CONFIG.token}`,
+              "Accept": "application/vnd.github+json",
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              message: `upload: ${category} by ${name}`,
+              content: base64,
+              branch: CONFIG.branch,
+            }),
+          });
+          if (!res.ok) {
+            const t = await res.text();
+            throw new Error(`GitHub API ${res.status}: ${t.slice(0,200)}`);
+          }
+          setStatus("Uploaded! Thank you.", "ok");
+          fileInput.value = "";
+          preview.style.display = "none";
+        } catch (e) {
+          setStatus("Upload failed: " + e.message, "err");
+        } finally {
+          btn.disabled = false;
+        }
+      };
+      reader.onerror = () => { setStatus("Could not read the file.", "err"); btn.disabled = false; };
+      reader.readAsDataURL(file);
+    });
+  </script>
+</body>
+</html>

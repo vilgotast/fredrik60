@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gallery - Fredrik60 Challenge</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 960px; margin: 0 auto; padding: 24px 16px;
+      background: #fafafa; color: #222;
+    }
+    h1 { font-size: 1.4rem; }
+    h2 { font-size: 1.1rem; margin-top: 32px; border-bottom: 2px solid #2563eb; padding-bottom: 4px; }
+    .grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px; margin-top: 12px;
+    }
+    .card { background:#fff; border:1px solid #e5e5e5; border-radius:8px; overflow:hidden; }
+    .card img { width:100%; height:200px; object-fit:cover; display:block; }
+    .card .cap { padding:8px 10px; font-size:0.8rem; color:#666; }
+    #loading { color:#888; }
+    a { color:#2563eb; }
+    .empty { color:#999; font-style:italic; }
+  </style>
+</head>
+<body>
+  <h1>Fredrik60 Photo Challenge - Gallery</h1>
+  <div id="loading">Loading...</div>
+  <div id="gallery"></div>
+  <p style="margin-top:24px;"><a href="index.html">&larr; Back to upload</a></p>
+
+  <script src="config.js"></script>
+  <script>
+    (async () => {
+      const loading = document.getElementById("loading");
+      const gallery = document.getElementById("gallery");
+      try {
+        const url = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${CONFIG.uploadsFolder}?ref=${CONFIG.branch}`;
+        const res = await fetch(url, {
+          headers: { "Accept": "application/vnd.github+json" },
+        });
+        if (!res.ok) throw new Error(`API ${res.status}`);
+        const files = await res.json();
+        const imgs = Array.isArray(files) ? files.filter(f => f.type === "file") : [];
+
+        // group by category (filename prefix before first "-<name>-<ts>")
+        const byCat = {};
+        CONFIG.categories.forEach(c => byCat[c] = []);
+        imgs.forEach(f => {
+          const prefix = f.name.split("-").slice(0, 1).join("");
+          const cat = CONFIG.categories.find(c => c.replace(/[^a-zA-Z0-9_-]/g,"_") === prefix);
+          if (cat) byCat[cat].push(f);
+          else { (byCat["Other"] = byCat["Other"] || []).push(f); }
+        });
+
+        loading.style.display = "none";
+        const order = [...CONFIG.categories];
+        if (byCat["Other"]) order.push("Other");
+        order.forEach(cat => {
+          const items = byCat[cat] || [];
+          const h = document.createElement("h2");
+          h.textContent = `${cat} (${items.length})`;
+          gallery.appendChild(h);
+          const grid = document.createElement("div");
+          grid.className = "grid";
+          if (items.length === 0) {
+            const e = document.createElement("p");
+            e.className = "empty"; e.textContent = "No uploads yet.";
+            gallery.appendChild(e);
+            return;
+          }
+          items.forEach(f => {
+            const card = document.createElement("div");
+            card.className = "card";
+            const img = document.createElement("img");
+            img.src = f.download_url;
+            img.loading = "lazy";
+            img.alt = f.name;
+            const cap = document.createElement("div");
+            cap.className = "cap";
+            cap.textContent = f.name;
+            card.appendChild(img);
+            card.appendChild(cap);
+            grid.appendChild(card);
+          });
+          gallery.appendChild(grid);
+        });
+      } catch (e) {
+        loading.textContent = "Failed to load: " + e.message;
+      }
+    })();
+  </script>
+</body>
+</html>
