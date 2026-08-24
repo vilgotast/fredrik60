@@ -11,7 +11,7 @@ const CONFIG = {
   branch: "main",
   uploadsFolder: "uploads",
   // ⚠️ PASTE YOUR TOKEN HERE (starts with github_pat_...)
-  token: "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",
+  token: "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",
   // Categories for the challenge. Edit to match your event.
   categories: [
     "Best sunset",
